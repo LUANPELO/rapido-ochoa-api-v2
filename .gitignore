@@ -2,25 +2,73 @@
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
+*.pyc
+*.pyo
+*.pyd
 .Python
+
+# Entorno virtual
 venv/
 env/
 ENV/
+.venv/
 
 # Logs
 *.log
-logs/
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # Sistema
 .DS_Store
 Thumbs.db
 
-# Configuración local
+# Configuración
 .env
+```
+
+6. **Guarda** (Ctrl+S) y cierra
+
+---
+
+### **Paso 2: Verificar que requirements.txt esté completo**
+
+1. Abre `requirements.txt` con el Bloc de notas
+2. Verifica que tenga esto:
+```
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.4.2
+selenium==4.15.2
+beautifulsoup4==4.12.2
+requests==2.31.0
+```
+
+3. Si falta algo, pégalo
+4. Guarda y cierra
+
+---
+
+### **Paso 3: Volver a GitHub Desktop**
+
+1. Cierra la ventana del Explorador
+3. Presiona **F5** para refrescar
+4. Ahora deberías ver en el panel izquierdo:
+```
+Changes (5)
+✅ .gitignore
+✅ main.py
+✅ README
+✅ requirements.txt
+✅ test_api.py
+```
+
+**(NO debe aparecer `venv/` ni `__pycache__/`)**
+
+---
+
+### **Paso 4: Hacer el Commit**
+
+```
+   Agregar código de la API
