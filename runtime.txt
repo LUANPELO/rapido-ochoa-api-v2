@@ -1,0 +1,42 @@
+python-3.11.0
+```
+5. Guarda el archivo como: `runtime.txt`
+   - **Nombre:** `runtime.txt`
+   - **Tipo:** "Todos los archivos (*.*)"
+   - **Ubicación:** En la carpeta de tu proyecto
+
+---
+
+## 📤 **Paso 2: Subir el cambio a GitHub**
+
+1. Abre **GitHub Desktop**
+2. Verás el nuevo archivo `runtime.txt` en el panel izquierdo
+3. En **"Summary"** escribe:
+```
+   Agregar runtime.txt con Python 3.11
+```
+4. Click en **"Commit to main"**
+5. Click en **"Push origin"** (arriba)
+
+---
+
+## 🔄 **Paso 3: Render desplegará automáticamente**
+
+Render detectará el cambio y volverá a desplegar automáticamente usando Python 3.11.
+
+1. Ve a tu dashboard de Render
+2. Verás que empieza un nuevo deploy automáticamente
+3. Espera 5-10 minutos
+
+Esta vez debería funcionar porque Python 3.11 tiene versiones pre-compiladas de `pydantic-core`.
+
+---
+
+## 📝 **Resumen de lo que debes hacer:**
+```
+1. Crear archivo "runtime.txt" con: python-3.11.0
+2. Guardarlo en la carpeta del proyecto
+3. Abrir GitHub Desktop
+4. Commit: "Agregar runtime.txt"
+5. Push origin
+6. Esperar que Render redespliegue automáticamente
