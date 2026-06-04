@@ -1,44 +1,39 @@
 """
 API REST para rastreo de encomiendas de Rápido Ochoa
-Optimizada para respuesta rápida
+Scraping HTTP directo (sin Selenium) - v3.0.0
 """
 
+import re
+import logging
+from datetime import datetime
+from typing import List, Optional
+
+import requests
+from bs4 import BeautifulSoup
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.keys import Keys
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from typing import List, Optional
-from datetime import datetime
-import time
-import logging
-import re
 
-# Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(
-    title="API Rápido Ochoa Rastreo",
-    description="API para consultar información de encomiendas de Rápido Ochoa",
-    version="2.1.0"
+BASE_URL = (
+    "https://rapidoochoa.tmsolutions.com.co/tmland/faces/public/"
+    "tmland-carga/cotizador_envios.xhtml?parametroInicial=cmFwaWRvb2Nob2E="
 )
-
-# Configurar CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+POST_URL = (
+    "https://rapidoochoa.tmsolutions.com.co/tmland/faces/public/"
+    "tmland-carga/cotizador_envios.xhtml"
 )
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+    )
+}
 
-# Modelos
+# ── Modelos ───────────────────────────────────────────────────────────────────
+
 class EventoTrazabilidad(BaseModel):
     fecha: str
     detalle: str
@@ -68,378 +63,202 @@ class DatosEncomienda(BaseModel):
 class ConsultaRequest(BaseModel):
     numero_guia: str
 
-class RapidoOchoaScraper:
-    def __init__(self):
-        self.url_base = "https://rapidoochoa.tmsolutions.com.co/tmland/faces/public/tmland-carga/cotizador_envios.xhtml?parametroInicial=cmFwaWRvb2Nob2E="
-        self.driver = None
-    
-    def _inicializar_driver(self):
-        """Inicializa el driver de Chrome en modo headless optimizado"""
-        chrome_options = Options()
-        chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.add_argument('--disable-gpu')
-        chrome_options.add_argument('--window-size=1920,1080')
-        chrome_options.add_argument('--disable-blink-features=AutomationControlled')
-        chrome_options.add_argument('--disable-extensions')
-        chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
-        
-        try:
-            self.driver = webdriver.Chrome(options=chrome_options)
-            self.driver.set_page_load_timeout(20)
-            logger.info("✅ Driver de Chrome inicializado")
-        except Exception as e:
-            logger.error(f"❌ Error al inicializar Chrome: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail="Error al inicializar navegador. Verifica que ChromeDriver esté instalado."
-            )
-    
-    def _cerrar_driver(self):
-        """Cierra el driver"""
-        if self.driver:
-            self.driver.quit()
-            self.driver = None
-    
-    def consultar_guia(self, numero_guia: str) -> DatosEncomienda:
-        """Consulta la información de una guía"""
-        try:
-            self._inicializar_driver()
-            
-            logger.info(f"🌐 Navegando a Rápido Ochoa...")
-            self.driver.get(self.url_base)
-            wait = WebDriverWait(self.driver, 20)
-            
-            time.sleep(2)
-            
-            # Click en la pestaña "Rastreo de envios"
-            logger.info("🔍 Buscando pestaña de rastreo...")
-            try:
-                tab_rastreo = wait.until(
-                    EC.element_to_be_clickable((By.XPATH, "//a[contains(text(), 'Rastreo de envios')]"))
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _get_viewstate(html: str) -> Optional[str]:
+    match = re.search(r'javax\.faces\.ViewState[^>]*value="([^"]+)"', html)
+    return match.group(1) if match else None
+
+def _get_viewstate_from_response(text: str) -> Optional[str]:
+    match = re.search(
+        r'id="j_id__v_0:javax\.faces\.ViewState:1"[^>]*>.*?<!\[CDATA\[([^\]]+)\]\]>',
+        text, re.DOTALL,
+    )
+    return match.group(1) if match else None
+
+def _label(soup: BeautifulSoup, id_: str) -> str:
+    el = soup.find("label", id=id_)
+    return el.get_text(strip=True) if el else ""
+
+def _panel_nombre(soup: BeautifulSoup, *panel_ids) -> str:
+    """Busca 'Nombre: X' dentro de cualquiera de los panel_ids dados."""
+    for pid in panel_ids:
+        panel = soup.find(id=pid)
+        if not panel:
+            continue
+        for lbl in panel.find_all("label"):
+            t = lbl.get_text(strip=True)
+            if t.startswith("Nombre:"):
+                return t.replace("Nombre:", "").strip()
+    return ""
+
+# ── Scraper ───────────────────────────────────────────────────────────────────
+
+def consultar_guia(numero_guia: str, timeout: int = 20) -> DatosEncomienda:
+    try:
+        session = requests.Session()
+        session.headers.update(HEADERS)
+
+        # Paso 1: GET inicial
+        r1 = session.get(BASE_URL, timeout=timeout)
+        r1.raise_for_status()
+        view_state = _get_viewstate(r1.text)
+        if not view_state:
+            raise HTTPException(status_code=500, detail="No se encontró ViewState en el sitio")
+
+        # Paso 2: Activar tab "Rastreo de envíos"
+        # El form_entrega no existe en el HTML inicial; se carga al cambiar de tab.
+        r2 = session.post(POST_URL, data={
+            "javax.faces.partial.ajax": "true",
+            "javax.faces.source": "tabpane",
+            "javax.faces.partial.execute": "tabpane",
+            "javax.faces.partial.render": "tabpane",
+            "javax.faces.behavior.event": "tabChange",
+            "javax.faces.partial.event": "tabChange",
+            "tabpane_activeIndex": "1",
+            "tabpane_newTab": "tabpane:j_id_1l",
+            "tabpane": "tabpane",
+            "tabpane:j_id_m_SUBMIT": "1",
+            "javax.faces.ViewState": view_state,
+        }, timeout=timeout)
+        r2.raise_for_status()
+        view_state2 = _get_viewstate_from_response(r2.text) or view_state
+
+        # Paso 3: Consultar la guía (evento keyup)
+        r3 = session.post(POST_URL, data={
+            "javax.faces.partial.ajax": "true",
+            "javax.faces.source": "tabpane:form_entrega:codigoguia",
+            "javax.faces.partial.execute": "tabpane:form_entrega",
+            "javax.faces.partial.render": "tabpane:form_entrega",
+            "javax.faces.behavior.event": "keyup",
+            "javax.faces.partial.event": "keyup",
+            "tabpane": "tabpane",
+            "tabpane:form_entrega:codigoguia": numero_guia,
+            "tabpane:form_entrega:documento_anexo": "",
+            "tabpane:form_entrega_SUBMIT": "1",
+            "javax.faces.ViewState": view_state2,
+        }, timeout=timeout)
+        r3.raise_for_status()
+
+        # Parsear respuesta
+        for block in re.findall(r"<!\[CDATA\[(.*?)\]\]>", r3.text, re.DOTALL):
+            if "form_entrega" not in block or len(block) < 500:
+                continue
+
+            soup = BeautifulSoup(block, "html.parser")
+
+            numero = _label(soup, "tabpane:form_entrega:j_id_31")
+            if not numero:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"No se encontró información para la guía {numero_guia}"
                 )
-                self.driver.execute_script("arguments[0].click();", tab_rastreo)
-                logger.info("✅ Click en pestaña Rastreo")
-            except:
-                logger.info("Método alternativo: buscando por índice...")
-                tabs = self.driver.find_elements(By.CSS_SELECTOR, "li.ui-tabs-header")
-                if len(tabs) > 1:
-                    self.driver.execute_script("arguments[0].click();", tabs[1])
-                else:
-                    raise Exception("No se encontró la pestaña de rastreo")
-            
-            time.sleep(3)
-            
-            logger.info(f"📝 Ingresando número de guía: {numero_guia}")
-            
-            input_guia = wait.until(
-                EC.presence_of_element_located((By.ID, "tabpane:form_entrega:codigoguia"))
+
+            # Origen / Destino
+            od = _label(soup, "tabpane:form_entrega:j_id_3b")
+            origen, destino = (od.split(" - ", 1) + [""])[:2] if " - " in od else (od, "")
+
+            # Remitente — panel j_id_3e contiene j_id_3k internamente
+            remitente = _panel_nombre(soup,
+                "tabpane:form_entrega:j_id_3k",
+                "tabpane:form_entrega:j_id_3e",
             )
-            
-            input_guia.clear()
-            time.sleep(0.5)
-            input_guia.send_keys(numero_guia)
-            time.sleep(0.5)
-            input_guia.send_keys(Keys.RETURN)
-            logger.info("✅ Guía ingresada, esperando resultados...")
-            
-            # Esperar resultados
-            max_intentos = 20
-            datos_encontrados = False
-            for intento in range(max_intentos):
-                time.sleep(0.5)
-                try:
-                    texto = self.driver.find_element(By.TAG_NAME, "body").text
-                    
-                    if ("Remitente" in texto and "Nombre:" in texto) or \
-                       ("Destinatario" in texto and "Nombre:" in texto) or \
-                       ("Trazabilidad" in texto and "GUIA ELABORADA" in texto):
-                        logger.info(f"✅ Datos encontrados en ~{(intento + 1) * 0.5}s")
-                        datos_encontrados = True
-                        break
-                except:
-                    continue
-            
-            if not datos_encontrados:
-                logger.warning("⚠️ No se detectaron datos, intentando extraer...")
-            
-            time.sleep(1)
-            
-            # Verificar si hay resultados
-            try:
-                texto_pagina = self.driver.find_element(By.TAG_NAME, "body").text
-                if "No se encontr" in texto_pagina or "sin resultado" in texto_pagina.lower():
-                    raise HTTPException(
-                        status_code=404,
-                        detail=f"No se encontró información para la guía {numero_guia}"
-                    )
-            except NoSuchElementException:
-                pass
-            
-            datos = self._extraer_informacion(numero_guia, wait)
-            
-            return datos
-            
-        except TimeoutException as e:
-            logger.error(f"⏱️ Timeout: {e}")
-            raise HTTPException(
-                status_code=408,
-                detail="La consulta tardó demasiado. Intenta nuevamente."
+
+            # Destinatario — panel j_id_3u contiene j_id_3w internamente
+            destinatario = _panel_nombre(soup,
+                "tabpane:form_entrega:j_id_3w",
+                "tabpane:form_entrega:j_id_3u",
             )
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"❌ Error: {e}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Error al consultar guía: {str(e)}"
+
+            # Productos — [0] empaque, [1] dice_contener (colspan=2), [2] unidades, [3] peso
+            productos = []
+            tbody = soup.find("tbody", id=lambda x: x and "j_id_4d_data" in str(x))
+            if tbody:
+                for row in tbody.find_all("tr", attrs={"data-ri": True}):
+                    cells = row.find_all("td")
+                    if len(cells) >= 4:
+                        productos.append(Producto(
+                            empaque=cells[0].get_text(strip=True),
+                            dice_contener=cells[1].get_text(strip=True),
+                            unidades=cells[2].get_text(strip=True),
+                            peso_cobrar=cells[3].get_text(strip=True),
+                        ))
+
+            # Total unidades desde tfoot
+            total_unidades = None
+            tfoot = soup.find("tfoot")
+            if tfoot:
+                cells = [td.get_text(strip=True) for td in tfoot.find_all("td")]
+                total_unidades = cells[1] if len(cells) > 1 else None
+
+            # Trazabilidad
+            trazabilidad = []
+            for row in soup.find_all("tr", attrs={"data-ri": True}):
+                cells = [td.get_text(strip=True) for td in row.find_all("td")]
+                if len(cells) >= 3 and "/" in cells[0]:
+                    trazabilidad.append(EventoTrazabilidad(
+                        fecha=cells[0],
+                        detalle=cells[1],
+                        sede=cells[2],
+                        estado=cells[1],
+                    ))
+
+            estado_actual = trazabilidad[-1].detalle if trazabilidad else "Sin estado"
+
+            return DatosEncomienda(
+                numero_guia=numero,
+                documento_anexo=None,
+                fecha_admision=_label(soup, "tabpane:form_entrega:j_id_37"),
+                origen=origen.strip(),
+                destino=destino.strip(),
+                remitente_nombre=remitente,
+                destinatario_nombre=destinatario,
+                productos=productos,
+                total_unidades=total_unidades,
+                trazabilidad=trazabilidad,
+                estado_actual=estado_actual,
+                fecha_consulta=datetime.now().isoformat(),
             )
-        finally:
-            self._cerrar_driver()
-    
-    def _extraer_informacion(self, numero_guia: str, wait) -> DatosEncomienda:
-        """Extrae toda la información de la página"""
-        
-        logger.info("📊 Extrayendo información...")
-        
-        try:
-            wait.until(lambda driver: "Remitente" in driver.find_element(By.TAG_NAME, "body").text)
-            logger.info("✅ Contenido confirmado")
-        except:
-            logger.warning("⚠️ No se pudo confirmar contenido")
-        
-        texto_pagina = self.driver.find_element(By.TAG_NAME, "body").text
-        
-        # Debug
-        if "Remitente" in texto_pagina:
-            inicio = texto_pagina.find("Remitente")
-            fragmento = texto_pagina[inicio:inicio+200]
-            logger.info(f"📝 Fragmento: {fragmento[:150]}")
-        
-        info_basica = self._extraer_info_basica(numero_guia, texto_pagina)
-        remitente = self._extraer_remitente(texto_pagina)
-        destinatario = self._extraer_destinatario(texto_pagina)
-        productos = self._extraer_productos()
-        trazabilidad = self._extraer_trazabilidad(texto_pagina)
-        
-        estado_actual = "Información disponible"
-        if trazabilidad and len(trazabilidad) > 0:
-            estado_actual = trazabilidad[-1].detalle
-        
-        datos = DatosEncomienda(
-            numero_guia=numero_guia,
-            documento_anexo=info_basica.get('documento_anexo'),
-            fecha_admision=info_basica.get('fecha_admision', ''),
-            origen=info_basica.get('origen', ''),
-            destino=info_basica.get('destino', ''),
-            remitente_nombre=remitente,
-            destinatario_nombre=destinatario,
-            productos=productos,
-            total_unidades=info_basica.get('total_unidades'),
-            trazabilidad=trazabilidad,
-            estado_actual=estado_actual,
-            fecha_consulta=datetime.now().isoformat()
+
+        raise HTTPException(
+            status_code=404,
+            detail=f"No se encontró información para la guía {numero_guia}"
         )
-        
-        logger.info(f"✅ Extracción completa: {len(trazabilidad)} eventos")
-        
-        return datos
-    
-    def _extraer_info_basica(self, numero_guia: str, texto_pagina: str) -> dict:
-        """Extrae la información básica"""
-        info = {'numero_guia': numero_guia}
-        
-        try:
-            match = re.search(r'Documento anexo\s*(\S+)', texto_pagina)
-            if match:
-                info['documento_anexo'] = match.group(1)
-            
-            match = re.search(r'Fecha de admision\s*(\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2})', texto_pagina)
-            if match:
-                info['fecha_admision'] = match.group(1)
-            
-            match = re.search(r'Origen - Destino\s*([A-Z\s]+\([A-Z\s]+\))\s*-\s*([A-Z\s]+\([A-Z\s]+\))', texto_pagina)
-            if match:
-                info['origen'] = match.group(1).strip()
-                info['destino'] = match.group(2).strip()
-            
-            match = re.search(r'Total\s*(\d+)', texto_pagina)
-            if match:
-                info['total_unidades'] = match.group(1)
-                
-        except Exception as e:
-            logger.warning(f"⚠️ Error extrayendo info básica: {e}")
-        
-        return info
-    
-    def _extraer_remitente(self, texto_pagina: str) -> str:
-        """Extrae el nombre del remitente"""
-        try:
-            # Método 1: Buscar entre "Remitente Nombre:" y salto de línea
-            match = re.search(r'Remitente\s+Nombre:\s+([A-Z][A-Z\s]+?)(?=\n)', texto_pagina)
-            if match:
-                nombre = match.group(1).strip()
-                nombre = re.sub(r'\s+[A-Z]$', '', nombre)  # Quitar letra suelta al final
-                nombre = ' '.join(nombre.split())
-                logger.info(f"✅ Remitente: {nombre}")
-                return nombre
-            
-            # Método 2: Más flexible
-            match = re.search(r'Remitente.*?Nombre:\s*([A-Z][A-Z\s]{3,50})', texto_pagina, re.DOTALL)
-            if match:
-                nombre = match.group(1).strip()
-                # Limpiar hasta encontrar algo que no sea letra o espacio
-                nombre = re.split(r'[^A-Z\s]', nombre)[0]
-                nombre = ' '.join(nombre.split())
-                logger.info(f"✅ Remitente (método 2): {nombre}")
-                return nombre
-                
-        except Exception as e:
-            logger.warning(f"⚠️ Error extrayendo remitente: {e}")
-        
-        logger.warning("⚠️ No se pudo extraer remitente")
-        return "No disponible"
-    
-    def _extraer_destinatario(self, texto_pagina: str) -> str:
-        """Extrae el nombre del destinatario"""
-        try:
-            # Método 1: Buscar entre "Destinatario Nombre:" y salto de línea
-            match = re.search(r'Destinatario\s+Nombre:\s+([A-Z][A-Z\s]+?)(?=\n)', texto_pagina)
-            if match:
-                nombre = match.group(1).strip()
-                nombre = re.sub(r'\s+[A-Z]$', '', nombre)  # Quitar letra suelta al final
-                nombre = ' '.join(nombre.split())
-                logger.info(f"✅ Destinatario: {nombre}")
-                return nombre
-            
-            # Método 2: Más flexible
-            match = re.search(r'Destinatario.*?Nombre:\s*([A-Z][A-Z\s]{3,50})', texto_pagina, re.DOTALL)
-            if match:
-                nombre = match.group(1).strip()
-                nombre = re.split(r'[^A-Z\s]', nombre)[0]
-                nombre = ' '.join(nombre.split())
-                logger.info(f"✅ Destinatario (método 2): {nombre}")
-                return nombre
-                
-        except Exception as e:
-            logger.warning(f"⚠️ Error extrayendo destinatario: {e}")
-        
-        logger.warning("⚠️ No se pudo extraer destinatario")
-        return "No disponible"
-    
-    def _extraer_productos(self) -> List[Producto]:
-        """Extrae la lista de productos"""
-        productos = []
-        
-        try:
-            tablas = self.driver.find_elements(By.CSS_SELECTOR, "table.ui-datatable-data, table")
-            
-            for tabla in tablas:
-                try:
-                    filas = tabla.find_elements(By.TAG_NAME, "tr")
-                    
-                    for fila in filas:
-                        celdas = fila.find_elements(By.TAG_NAME, "td")
-                        
-                        if len(celdas) >= 4:
-                            texto = fila.text.strip()
-                            if re.search(r'\d{5,}', texto):
-                                producto = Producto(
-                                    empaque=self._limpiar_texto(celdas[0].text),
-                                    dice_contener=self._limpiar_texto(celdas[1].text),
-                                    unidades=self._limpiar_texto(celdas[2].text),
-                                    peso_cobrar=self._limpiar_texto(celdas[3].text)
-                                )
-                                productos.append(producto)
-                except Exception:
-                    continue
-                    
-        except Exception as e:
-            logger.warning(f"⚠️ Error extrayendo productos: {e}")
-        
-        return productos
-    
-    def _extraer_trazabilidad(self, texto_pagina: str) -> List[EventoTrazabilidad]:
-        """Extrae la trazabilidad completa"""
-        eventos = []
-        
-        try:
-            if "Trazabilidad" in texto_pagina:
-                seccion_trazabilidad = texto_pagina.split("Trazabilidad")[1]
-                
-                patron = r'(\d{4}/\d{2}/\d{2}\s+\d{2}:\d{2})([A-Z][A-Z\s]+?)([A-Z][A-Z\s]+\([^)]+\))'
-                
-                matches = re.finditer(patron, seccion_trazabilidad)
-                
-                for match in matches:
-                    fecha = match.group(1).strip()
-                    detalle = match.group(2).strip()
-                    sede = match.group(3).strip()
-                    
-                    evento = EventoTrazabilidad(
-                        fecha=fecha,
-                        detalle=detalle,
-                        sede=sede,
-                        estado=detalle
-                    )
-                    eventos.append(evento)
-            
-            if not eventos:
-                eventos = self._extraer_trazabilidad_tabla()
-                
-        except Exception as e:
-            logger.warning(f"⚠️ Error extrayendo trazabilidad: {e}")
-        
-        return eventos
-    
-    def _extraer_trazabilidad_tabla(self) -> List[EventoTrazabilidad]:
-        """Extrae trazabilidad de una tabla"""
-        eventos = []
-        
-        try:
-            tablas = self.driver.find_elements(By.CSS_SELECTOR, "table")
-            
-            for tabla in tablas:
-                filas = tabla.find_elements(By.TAG_NAME, "tr")
-                
-                for fila in filas:
-                    celdas = fila.find_elements(By.TAG_NAME, "td")
-                    
-                    if len(celdas) >= 3:
-                        texto = celdas[0].text.strip()
-                        if re.match(r'\d{4}/\d{2}/\d{2}', texto):
-                            evento = EventoTrazabilidad(
-                                fecha=self._limpiar_texto(celdas[0].text),
-                                detalle=self._limpiar_texto(celdas[1].text),
-                                sede=self._limpiar_texto(celdas[2].text),
-                                estado=self._limpiar_texto(celdas[1].text)
-                            )
-                            eventos.append(evento)
-        except Exception as e:
-            logger.warning(f"⚠️ Error en tabla trazabilidad: {e}")
-        
-        return eventos
-    
-    def _limpiar_texto(self, texto: str) -> str:
-        """Limpia y normaliza texto"""
-        if not texto:
-            return ""
-        texto = ' '.join(texto.split())
-        return texto.strip()
 
-# Instancia del scraper
-scraper = RapidoOchoaScraper()
+    except HTTPException:
+        raise
+    except requests.exceptions.Timeout:
+        raise HTTPException(status_code=408, detail="Timeout al conectar con el sitio de Rápido Ochoa")
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=502, detail=f"Error de red: {e}")
+    except Exception as e:
+        logger.error(f"Error inesperado: {e}")
+        raise HTTPException(status_code=500, detail=f"Error inesperado: {e}")
 
-# Endpoints
+# ── FastAPI ───────────────────────────────────────────────────────────────────
+
+app = FastAPI(
+    title="API Rápido Ochoa Rastreo",
+    description="API para consultar información de encomiendas de Rápido Ochoa",
+    version="3.0.0"
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/")
 def root():
     return {
         "mensaje": "API de Rápido Ochoa - Rastreo de Encomiendas",
-        "version": "2.1.0",
+        "version": "3.0.0",
         "empresa": "Rápido Ochoa",
-        "ejemplo_guia": "E121101188",
-        "tiempo_respuesta": "~12-15 segundos",
+        "ejemplo_guia": "E121118705",
+        "tiempo_respuesta": "~3-5 segundos",
         "endpoints": {
             "consultar_get": "/api/rastreo/{numero_guia}",
             "consultar_post": "/api/rastreo",
@@ -451,31 +270,23 @@ def root():
 
 @app.get("/api/rastreo/{numero_guia}", response_model=DatosEncomienda)
 def consultar_guia_get(numero_guia: str):
-    """Consulta una guía de Rápido Ochoa (GET)"""
-    logger.info(f"📦 Nueva consulta: {numero_guia}")
-    return scraper.consultar_guia(numero_guia)
+    logger.info(f"📦 Consulta GET: {numero_guia}")
+    return consultar_guia(numero_guia)
 
 @app.post("/api/rastreo", response_model=DatosEncomienda)
 def consultar_guia_post(consulta: ConsultaRequest):
-    """Consulta una guía de Rápido Ochoa (POST)"""
-    logger.info(f"📦 Nueva consulta POST: {consulta.numero_guia}")
-    return scraper.consultar_guia(consulta.numero_guia)
+    logger.info(f"📦 Consulta POST: {consulta.numero_guia}")
+    return consultar_guia(consulta.numero_guia)
 
 @app.get("/api/health")
 def health_check():
-    """Verifica el estado de la API"""
     return {
         "status": "ok",
         "timestamp": datetime.now().isoformat(),
         "service": "Rápido Ochoa Rastreo API",
-        "version": "2.1.0"
+        "version": "3.0.0"
     }
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True
-    )
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
