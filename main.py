@@ -33,6 +33,639 @@ HEADERS = {
     )
 }
 
+# ===== TIEMPOS DE VIAJE ENTRE CIUDADES (horas, referencia/aprox.) =====
+# Tabla estática de duraciones típicas por ruta. Es la fuente PRINCIPAL para
+# estimar la llegada de encomiendas: es instantánea (sin llamadas de red) y
+# cubre muchas rutas entre poblaciones pequeñas que la API de horarios de
+# pasajeros no necesariamente tiene indexadas como ciudad buscable.
+TIEMPOS_VIAJE = {
+    # ========== BOGOTÁ ==========
+    ("BOGOTA", "MEDELLIN"): 10,
+    ("MEDELLIN", "BOGOTA"): 10,
+    ("BOGOTA", "CALI"): 10,
+    ("CALI", "BOGOTA"): 10,
+    ("BOGOTA", "BARRANQUILLA"): 18,
+    ("BARRANQUILLA", "BOGOTA"): 18,
+    ("BOGOTA", "BUCARAMANGA"): 8,
+    ("BUCARAMANGA", "BOGOTA"): 8,
+    ("BOGOTA", "TOLU"): 16,
+    ("TOLU", "BOGOTA"): 16,
+    ("BOGOTA", "SOLEDAD"): 18,
+    ("SOLEDAD", "BOGOTA"): 18,
+    ("BOGOTA", "CAUCASIA"): 13,
+    ("CAUCASIA", "BOGOTA"): 13,
+    ("BOGOTA", "CERETE"): 16,
+    ("CERETE", "BOGOTA"): 16,
+    ("BOGOTA", "CHINU"): 16,
+    ("CHINU", "BOGOTA"): 16,
+    ("BOGOTA", "COVENAS"): 17,
+    ("COVENAS", "BOGOTA"): 17,
+    ("BOGOTA", "LA APARTADA"): 14,
+    ("LA APARTADA", "BOGOTA"): 14,
+    ("BOGOTA", "LORICA"): 17,
+    ("LORICA", "BOGOTA"): 17,
+    ("BOGOTA", "MONTERIA"): 16,
+    ("MONTERIA", "BOGOTA"): 16,
+    ("BOGOTA", "PLANETA RICA"): 15,
+    ("PLANETA RICA", "BOGOTA"): 15,
+    ("BOGOTA", "RIONEGRO"): 7,
+    ("RIONEGRO", "BOGOTA"): 7,
+    ("BOGOTA", "SINCELEJO"): 17,
+    ("SINCELEJO", "BOGOTA"): 17,
+    ("BOGOTA", "SAHAGUN"): 16,
+    ("SAHAGUN", "BOGOTA"): 16,
+    ("BOGOTA", "SAN ANTERO"): 18,
+    ("SAN ANTERO", "BOGOTA"): 18,
+
+    # ========== MEDELLÍN ==========
+    ("MEDELLIN", "BARRANQUILLA"): 16,
+    ("BARRANQUILLA", "MEDELLIN"): 16,
+    ("MEDELLIN", "CALI"): 8,
+    ("CALI", "MEDELLIN"): 8,
+    ("MEDELLIN", "PEREIRA"): 5,
+    ("PEREIRA", "MEDELLIN"): 5,
+    ("MEDELLIN", "SINCELEJO"): 12,
+    ("SINCELEJO", "MEDELLIN"): 12,
+    ("MEDELLIN", "CARTAGENA"): 14,
+    ("CARTAGENA", "MEDELLIN"): 14,
+    ("MEDELLIN", "CAUCASIA"): 8,
+    ("CAUCASIA", "MEDELLIN"): 8,
+    ("MEDELLIN", "PLANETA RICA"): 10,
+    ("PLANETA RICA", "MEDELLIN"): 10,
+    ("MEDELLIN", "MAICAO"): 22,
+    ("MAICAO", "MEDELLIN"): 22,
+    ("MEDELLIN", "SAHAGUN"): 9,
+    ("SAHAGUN", "MEDELLIN"): 9,
+    ("MEDELLIN", "TOLU"): 11,
+    ("TOLU", "MEDELLIN"): 11,
+    ("MEDELLIN", "QUIBDO"): 11,
+    ("QUIBDO", "MEDELLIN"): 11,
+    ("MEDELLIN", "RIOHACHA"): 21,
+    ("RIOHACHA", "MEDELLIN"): 21,
+    ("MEDELLIN", "SOLEDAD"): 16,
+    ("SOLEDAD", "MEDELLIN"): 16,
+    ("MEDELLIN", "MONTERIA"): 9,
+    ("MONTERIA", "MEDELLIN"): 9,
+    ("MEDELLIN", "SANTA MARTA"): 18,
+    ("SANTA MARTA", "MEDELLIN"): 18,
+    ("MEDELLIN", "ARBOLETES"): 8,
+    ("ARBOLETES", "MEDELLIN"): 8,
+    ("MEDELLIN", "BETULIA"): 3,
+    ("BETULIA", "MEDELLIN"): 3,
+    ("MEDELLIN", "BOLOMBOLO"): 3,
+    ("BOLOMBOLO", "MEDELLIN"): 3,
+    ("MEDELLIN", "CAICEDO"): 4,
+    ("CAICEDO", "MEDELLIN"): 4,
+    ("MEDELLIN", "CARMEN DE BOLIVAR"): 13,
+    ("CARMEN DE BOLIVAR", "MEDELLIN"): 13,
+    ("MEDELLIN", "CERETE"): 8,
+    ("CERETE", "MEDELLIN"): 8,
+    ("MEDELLIN", "CHINU"): 10,
+    ("CHINU", "MEDELLIN"): 10,
+    ("MEDELLIN", "CIENAGA"): 17,
+    ("CIENAGA", "MEDELLIN"): 17,
+    ("MEDELLIN", "CIUDAD BOLIVAR"): 3,
+    ("CIUDAD BOLIVAR", "MEDELLIN"): 3,
+    ("MEDELLIN", "CONCORDIA"): 3,
+    ("CONCORDIA", "MEDELLIN"): 3,
+    ("MEDELLIN", "CONDOTO"): 8,
+    ("CONDOTO", "MEDELLIN"): 8,
+    ("MEDELLIN", "COVENAS"): 10,
+    ("COVENAS", "MEDELLIN"): 10,
+    ("MEDELLIN", "GIRALDO"): 3,
+    ("GIRALDO", "MEDELLIN"): 3,
+    ("MEDELLIN", "ISTMINA"): 7,
+    ("ISTMINA", "MEDELLIN"): 7,
+    ("MEDELLIN", "JARDIN"): 3,
+    ("JARDIN", "MEDELLIN"): 3,
+    ("MEDELLIN", "LA APARTADA"): 5,
+    ("LA APARTADA", "MEDELLIN"): 5,
+    ("MEDELLIN", "LA DORADA"): 4,
+    ("LA DORADA", "MEDELLIN"): 4,
+    ("MEDELLIN", "LORICA"): 9,
+    ("LORICA", "MEDELLIN"): 9,
+    ("MEDELLIN", "MAGANGUE"): 11,
+    ("MAGANGUE", "MEDELLIN"): 11,
+    ("MEDELLIN", "MOMPOX"): 12,
+    ("MOMPOX", "MEDELLIN"): 12,
+    ("MEDELLIN", "PUERTO BERRIO"): 3,
+    ("PUERTO BERRIO", "MEDELLIN"): 3,
+    ("MEDELLIN", "SAN ANTERO"): 10,
+    ("SAN ANTERO", "MEDELLIN"): 10,
+    ("MEDELLIN", "SAN MARCOS"): 11,
+    ("SAN MARCOS", "MEDELLIN"): 11,
+    ("MEDELLIN", "SAN ONOFRE"): 12,
+    ("SAN ONOFRE", "MEDELLIN"): 12,
+    ("MEDELLIN", "TARAZA"): 6,
+    ("TARAZA", "MEDELLIN"): 6,
+    ("MEDELLIN", "TUTUNENDO"): 10,
+    ("TUTUNENDO", "MEDELLIN"): 10,
+    ("MEDELLIN", "URRAO"): 4,
+    ("URRAO", "MEDELLIN"): 4,
+    ("MEDELLIN", "ANDES"): 4,
+    ("MEDELLIN", "RIONEGRO"): 1,
+
+    # ========== BARRANQUILLA / SOLEDAD ==========
+    ("BARRANQUILLA", "SINCELEJO"): 4,
+    ("SINCELEJO", "BARRANQUILLA"): 4,
+    ("BARRANQUILLA", "CALI"): 20,
+    ("CALI", "BARRANQUILLA"): 20,
+    ("BARRANQUILLA", "CAUCASIA"): 8,
+    ("CAUCASIA", "BARRANQUILLA"): 8,
+    ("BARRANQUILLA", "PLANETA RICA"): 6,
+    ("PLANETA RICA", "BARRANQUILLA"): 6,
+    ("BARRANQUILLA", "MAICAO"): 7,
+    ("MAICAO", "BARRANQUILLA"): 7,
+    ("BARRANQUILLA", "LA APARTADA"): 7,
+    ("LA APARTADA", "BARRANQUILLA"): 7,
+    ("BARRANQUILLA", "SANTA MARTA"): 3,
+    ("SANTA MARTA", "BARRANQUILLA"): 3,
+    ("BARRANQUILLA", "RIOHACHA"): 5,
+    ("RIOHACHA", "BARRANQUILLA"): 5,
+    ("BARRANQUILLA", "YARUMAL"): 13,
+    ("YARUMAL", "BARRANQUILLA"): 13,
+    ("BARRANQUILLA", "SAHAGUN"): 6,
+    ("SAHAGUN", "BARRANQUILLA"): 6,
+    ("BARRANQUILLA", "SOLEDAD"): 1,
+    ("SOLEDAD", "BARRANQUILLA"): 1,
+    ("BARRANQUILLA", "MONTERIA"): 7,
+    ("MONTERIA", "BARRANQUILLA"): 7,
+    ("BARRANQUILLA", "CARMEN DE BOLIVAR"): 5,
+    ("CARMEN DE BOLIVAR", "BARRANQUILLA"): 5,
+    ("BARRANQUILLA", "CHINU"): 5,
+    ("CHINU", "BARRANQUILLA"): 5,
+    ("BARRANQUILLA", "CIENAGA"): 2,
+    ("CIENAGA", "BARRANQUILLA"): 2,
+    ("BARRANQUILLA", "TARAZA"): 11,
+    ("TARAZA", "BARRANQUILLA"): 11,
+    ("SOLEDAD", "SINCELEJO"): 4,
+    ("SINCELEJO", "SOLEDAD"): 4,
+    ("SOLEDAD", "CALI"): 20,
+    ("CALI", "SOLEDAD"): 20,
+    ("SOLEDAD", "CAUCASIA"): 8,
+    ("CAUCASIA", "SOLEDAD"): 8,
+    ("SOLEDAD", "PLANETA RICA"): 6,
+    ("PLANETA RICA", "SOLEDAD"): 6,
+    ("SOLEDAD", "MAICAO"): 7,
+    ("MAICAO", "SOLEDAD"): 7,
+    ("SOLEDAD", "LA APARTADA"): 7,
+    ("LA APARTADA", "SOLEDAD"): 7,
+    ("SOLEDAD", "SANTA MARTA"): 3,
+    ("SANTA MARTA", "SOLEDAD"): 3,
+    ("SOLEDAD", "RIOHACHA"): 5,
+    ("RIOHACHA", "SOLEDAD"): 5,
+    ("SOLEDAD", "YARUMAL"): 13,
+    ("YARUMAL", "SOLEDAD"): 13,
+    ("SOLEDAD", "SAHAGUN"): 7,
+    ("SAHAGUN", "SOLEDAD"): 7,
+    ("SOLEDAD", "MONTERIA"): 7,
+    ("MONTERIA", "SOLEDAD"): 7,
+
+    # ========== MONTERÍA ==========
+    ("MONTERIA", "SINCELEJO"): 3,
+    ("SINCELEJO", "MONTERIA"): 3,
+    ("MONTERIA", "PLANETA RICA"): 2,
+    ("PLANETA RICA", "MONTERIA"): 2,
+    ("MONTERIA", "LA APARTADA"): 2,
+    ("LA APARTADA", "MONTERIA"): 2,
+    ("MONTERIA", "RIOHACHA"): 12,
+    ("RIOHACHA", "MONTERIA"): 12,
+    ("MONTERIA", "MAICAO"): 14,
+    ("MAICAO", "MONTERIA"): 14,
+    ("MONTERIA", "SANTA MARTA"): 9,
+    ("SANTA MARTA", "MONTERIA"): 9,
+    ("MONTERIA", "TARAZA"): 4,
+    ("TARAZA", "MONTERIA"): 4,
+    ("MONTERIA", "SAHAGUN"): 3,
+    ("SAHAGUN", "MONTERIA"): 3,
+    ("MONTERIA", "CHINU"): 2,
+    ("CHINU", "MONTERIA"): 2,
+    ("MONTERIA", "TOLU"): 2,
+    ("TOLU", "MONTERIA"): 2,
+    ("MONTERIA", "ARBOLETES"): 3,
+    ("ARBOLETES", "MONTERIA"): 3,
+    ("MONTERIA", "CARTAGENA"): 5,
+    ("CARTAGENA", "MONTERIA"): 5,
+    ("MONTERIA", "CAUCASIA"): 3,
+    ("CAUCASIA", "MONTERIA"): 3,
+    ("MONTERIA", "COVENAS"): 2,
+    ("COVENAS", "MONTERIA"): 2,
+    ("MONTERIA", "LA DORADA"): 10,
+    ("LA DORADA", "MONTERIA"): 10,
+    ("MONTERIA", "LORICA"): 1,
+    ("LORICA", "MONTERIA"): 1,
+    ("MONTERIA", "SAN ANTERO"): 1,
+    ("SAN ANTERO", "MONTERIA"): 1,
+    ("MONTERIA", "YARUMAL"): 5,
+    ("YARUMAL", "MONTERIA"): 5,
+
+    # ========== SAHAGÚN ==========
+    ("SAHAGUN", "SINCELEJO"): 2,
+    ("SINCELEJO", "SAHAGUN"): 2,
+    ("SAHAGUN", "PLANETA RICA"): 2,
+    ("PLANETA RICA", "SAHAGUN"): 2,
+    ("SAHAGUN", "LA APARTADA"): 2,
+    ("LA APARTADA", "SAHAGUN"): 2,
+    ("SAHAGUN", "MAICAO"): 13,
+    ("MAICAO", "SAHAGUN"): 13,
+    ("SAHAGUN", "SANTA MARTA"): 8,
+    ("SANTA MARTA", "SAHAGUN"): 8,
+    ("SAHAGUN", "RIOHACHA"): 12,
+    ("RIOHACHA", "SAHAGUN"): 12,
+    ("SAHAGUN", "CAUCASIA"): 4,
+    ("CAUCASIA", "SAHAGUN"): 4,
+    ("SAHAGUN", "YARUMAL"): 5,
+    ("YARUMAL", "SAHAGUN"): 5,
+    ("MAGANGUE", "SAHAGUN"): 2,
+    ("SAHAGUN", "MAGANGUE"): 2,
+
+    # ========== CAUCASIA ==========
+    ("CAUCASIA", "SINCELEJO"): 4,
+    ("SINCELEJO", "CAUCASIA"): 4,
+    ("CAUCASIA", "SANTA MARTA"): 11,
+    ("SANTA MARTA", "CAUCASIA"): 11,
+    ("CAUCASIA", "MAICAO"): 15,
+    ("MAICAO", "CAUCASIA"): 15,
+    ("CAUCASIA", "PLANETA RICA"): 2,
+    ("PLANETA RICA", "CAUCASIA"): 2,
+    ("CAUCASIA", "TOLU"): 5,
+    ("TOLU", "CAUCASIA"): 5,
+    ("CAUCASIA", "ARBOLETES"): 3,
+    ("ARBOLETES", "CAUCASIA"): 3,
+    ("CAUCASIA", "CARTAGENA"): 8,
+    ("CARTAGENA", "CAUCASIA"): 8,
+    ("CAUCASIA", "CARMEN DE BOLIVAR"): 5,
+    ("CARMEN DE BOLIVAR", "CAUCASIA"): 5,
+    ("CAUCASIA", "CERETE"): 3,
+    ("CERETE", "CAUCASIA"): 3,
+    ("CAUCASIA", "CHINU"): 4,
+    ("CHINU", "CAUCASIA"): 4,
+    ("CAUCASIA", "COVENAS"): 5,
+    ("COVENAS", "CAUCASIA"): 5,
+    ("CAUCASIA", "MAGANGUE"): 6,
+    ("MAGANGUE", "CAUCASIA"): 6,
+    ("CAUCASIA", "PUERTO BERRIO"): 4,
+    ("PUERTO BERRIO", "CAUCASIA"): 4,
+    ("CAUCASIA", "SAN MARCOS"): 5,
+    ("SAN MARCOS", "CAUCASIA"): 5,
+
+    # ========== SANTA MARTA ==========
+    ("SANTA MARTA", "SINCELEJO"): 7,
+    ("SINCELEJO", "SANTA MARTA"): 7,
+    ("SANTA MARTA", "PLANETA RICA"): 9,
+    ("PLANETA RICA", "SANTA MARTA"): 9,
+    ("SANTA MARTA", "MAICAO"): 4,
+    ("MAICAO", "SANTA MARTA"): 4,
+    ("SANTA MARTA", "LA APARTADA"): 9,
+    ("LA APARTADA", "SANTA MARTA"): 9,
+    ("SANTA MARTA", "CARMEN DE BOLIVAR"): 6,
+    ("CARMEN DE BOLIVAR", "SANTA MARTA"): 6,
+    ("SANTA MARTA", "CERETE"): 9,
+    ("CERETE", "SANTA MARTA"): 9,
+    ("SANTA MARTA", "CHINU"): 8,
+    ("CHINU", "SANTA MARTA"): 8,
+    ("SANTA MARTA", "TARAZA"): 13,
+    ("TARAZA", "SANTA MARTA"): 13,
+    ("SANTA MARTA", "YARUMAL"): 14,
+    ("YARUMAL", "SANTA MARTA"): 14,
+
+    # ========== PLANETA RICA ==========
+    ("PLANETA RICA", "RIOHACHA"): 12,
+    ("RIOHACHA", "PLANETA RICA"): 12,
+    ("PLANETA RICA", "CARTAGENA"): 7,
+    ("CARTAGENA", "PLANETA RICA"): 7,
+    ("PLANETA RICA", "TOLU"): 3,
+    ("TOLU", "PLANETA RICA"): 3,
+    ("PLANETA RICA", "CERETE"): 1,
+    ("CERETE", "PLANETA RICA"): 1,
+    ("PLANETA RICA", "CHINU"): 2,
+    ("CHINU", "PLANETA RICA"): 2,
+    ("PLANETA RICA", "COVENAS"): 3,
+    ("COVENAS", "PLANETA RICA"): 3,
+    ("PLANETA RICA", "LA DORADA"): 7,
+    ("LA DORADA", "PLANETA RICA"): 7,
+    ("PLANETA RICA", "SAN MARCOS"): 2,
+    ("SAN MARCOS", "PLANETA RICA"): 2,
+    ("PLANETA RICA", "SAN ONOFRE"): 4,
+    ("SAN ONOFRE", "PLANETA RICA"): 4,
+    ("PLANETA RICA", "SINCELEJO"): 4,
+    ("SINCELEJO", "PLANETA RICA"): 4,
+    ("PLANETA RICA", "TARAZA"): 5,
+    ("TARAZA", "PLANETA RICA"): 5,
+    ("PLANETA RICA", "YARUMAL"): 7,
+    ("YARUMAL", "PLANETA RICA"): 7,
+    ("PLANETA RICA", "MAGANGUE"): 4,
+    ("MAGANGUE", "PLANETA RICA"): 4,
+
+    # ========== SINCELEJO ==========
+    ("SINCELEJO", "CARTAGENA"): 5,
+    ("CARTAGENA", "SINCELEJO"): 5,
+    ("SINCELEJO", "YARUMAL"): 9,
+    ("YARUMAL", "SINCELEJO"): 9,
+    ("SINCELEJO", "CARMEN DE BOLIVAR"): 3,
+    ("CARMEN DE BOLIVAR", "SINCELEJO"): 3,
+    ("SINCELEJO", "LA APARTADA"): 3,
+    ("LA APARTADA", "SINCELEJO"): 3,
+    ("SINCELEJO", "LA DORADA"): 13,
+    ("LA DORADA", "SINCELEJO"): 13,
+    ("SINCELEJO", "MAGANGUE"): 2,
+    ("MAGANGUE", "SINCELEJO"): 2,
+    ("SINCELEJO", "RIOHACHA"): 9,
+    ("RIOHACHA", "SINCELEJO"): 9,
+    ("SINCELEJO", "TARAZA"): 7,
+    ("TARAZA", "SINCELEJO"): 7,
+    ("MAICAO", "SINCELEJO"): 9,
+    ("SINCELEJO", "MAICAO"): 9,
+
+    # ========== LA APARTADA ==========
+    ("LA APARTADA", "RIOHACHA"): 12,
+    ("RIOHACHA", "LA APARTADA"): 12,
+    ("LA APARTADA", "MAICAO"): 13,
+    ("MAICAO", "LA APARTADA"): 13,
+    ("LA APARTADA", "LA DORADA"): 8,
+    ("LA DORADA", "LA APARTADA"): 8,
+    ("LA APARTADA", "PUERTO BERRIO"): 5,
+    ("PUERTO BERRIO", "LA APARTADA"): 5,
+    ("LA APARTADA", "SAN ONOFRE"): 4,
+    ("SAN ONOFRE", "LA APARTADA"): 4,
+    ("LA APARTADA", "TARAZA"): 2,
+    ("TARAZA", "LA APARTADA"): 2,
+    ("LA APARTADA", "YARUMAL"): 3,
+    ("YARUMAL", "LA APARTADA"): 3,
+
+    # ========== TOLÚ ==========
+    ("TOLU", "PUERTO BERRIO"): 9,
+    ("PUERTO BERRIO", "TOLU"): 9,
+    ("TOLU", "CARTAGENA"): 4,
+    ("CARTAGENA", "TOLU"): 4,
+    ("TOLU", "LA APARTADA"): 3,
+    ("LA APARTADA", "TOLU"): 3,
+    ("CERETE", "TOLU"): 2,
+    ("TOLU", "CERETE"): 2,
+
+    # ========== CARTAGENA ==========
+    ("CARTAGENA", "CARMEN DE BOLIVAR"): 2,
+    ("CARMEN DE BOLIVAR", "CARTAGENA"): 2,
+    ("CARTAGENA", "CHINU"): 4,
+    ("CHINU", "CARTAGENA"): 4,
+    ("CARTAGENA", "COVENAS"): 4,
+    ("COVENAS", "CARTAGENA"): 4,
+    ("CARTAGENA", "LA APARTADA"): 6,
+    ("LA APARTADA", "CARTAGENA"): 6,
+    ("CARTAGENA", "MAICAO"): 8,
+    ("MAICAO", "CARTAGENA"): 8,
+    ("CARTAGENA", "SAHAGUN"): 4,
+    ("SAHAGUN", "CARTAGENA"): 4,
+
+    # ========== RIOHACHA ==========
+    ("RIOHACHA", "CARMEN DE BOLIVAR"): 8,
+    ("CARMEN DE BOLIVAR", "RIOHACHA"): 8,
+    ("RIOHACHA", "SANTA MARTA"): 3,
+    ("SANTA MARTA", "RIOHACHA"): 3,
+    ("RIOHACHA", "BARRANQUILLA"): 5,
+    ("BARRANQUILLA", "RIOHACHA"): 5,
+    ("RIOHACHA", "SINCELEJO"): 9,
+    ("SINCELEJO", "RIOHACHA"): 9,
+    ("RIOHACHA", "PALOMINO"): 1,
+    ("PALOMINO", "RIOHACHA"): 1,
+    ("RIOHACHA", "MAICAO"): 2,
+    ("MAICAO", "RIOHACHA"): 2,
+    ("RIOHACHA", "TARAZA"): 13,
+    ("TARAZA", "RIOHACHA"): 13,
+    ("RIOHACHA", "LA APARTADA"): 12,
+    ("LA APARTADA", "RIOHACHA"): 12,
+    ("RIOHACHA", "YARUMAL"): 16,
+    ("YARUMAL", "RIOHACHA"): 16,
+    ("RIOHACHA", "CAUCASIA"): 15,
+    ("CAUCASIA", "RIOHACHA"): 15,
+    ("RIOHACHA", "CHINU"): 10,
+    ("CHINU", "RIOHACHA"): 10,
+    ("RIOHACHA", "SAHAGUN"): 12,
+    ("SAHAGUN", "RIOHACHA"): 12,
+
+    # ========== LORICA ==========
+    ("LORICA", "CARTAGENA"): 3,
+    ("CARTAGENA", "LORICA"): 3,
+    ("LORICA", "CAUCASIA"): 4,
+    ("CAUCASIA", "LORICA"): 4,
+    ("LORICA", "LA APARTADA"): 2,
+    ("LA APARTADA", "LORICA"): 2,
+    ("LORICA", "PLANETA RICA"): 2,
+    ("PLANETA RICA", "LORICA"): 2,
+    ("LORICA", "TARAZA"): 5,
+    ("TARAZA", "LORICA"): 5,
+    ("LORICA", "YARUMAL"): 6,
+    ("YARUMAL", "LORICA"): 6,
+    ("COVENAS", "LORICA"): 1,
+    ("LORICA", "COVENAS"): 1,
+
+    # ========== TARAZA ==========
+    ("TARAZA", "ARBOLETES"): 3,
+    ("ARBOLETES", "TARAZA"): 3,
+    ("TARAZA", "CARTAGENA"): 8,
+    ("CARTAGENA", "TARAZA"): 8,
+    ("TARAZA", "CAUCASIA"): 2,
+    ("CAUCASIA", "TARAZA"): 2,
+
+    # ========== YARUMAL ==========
+    ("YARUMAL", "CARMEN DE BOLIVAR"): 6,
+    ("CARMEN DE BOLIVAR", "YARUMAL"): 6,
+    ("YARUMAL", "CARTAGENA"): 10,
+    ("CARTAGENA", "YARUMAL"): 10,
+    ("YARUMAL", "CERETE"): 5,
+    ("CERETE", "YARUMAL"): 5,
+    ("YARUMAL", "SAN ANTERO"): 6,
+    ("SAN ANTERO", "YARUMAL"): 6,
+    ("SAN MARCOS", "YARUMAL"): 5,
+    ("YARUMAL", "SAN MARCOS"): 5,
+
+    # ========== CERETE ==========
+    ("CERETE", "LA DORADA"): 10,
+    ("LA DORADA", "CERETE"): 10,
+    ("CERETE", "SAN ANTERO"): 1,
+    ("SAN ANTERO", "CERETE"): 1,
+
+    # ========== SAN ANTERO ==========
+    ("SAN ANTERO", "CARTAGENA"): 4,
+    ("CARTAGENA", "SAN ANTERO"): 4,
+    ("SAN ANTERO", "CAUCASIA"): 4,
+    ("CAUCASIA", "SAN ANTERO"): 4,
+
+    # ========== CHINU ==========
+    ("CHINU", "RIOHACHA"): 10,
+    ("RIOHACHA", "CHINU"): 10,
+    ("CHINU", "SAHAGUN"): 1,
+    ("SAHAGUN", "CHINU"): 1,
+    ("CHINU", "LA APARTADA"): 3,
+    ("LA APARTADA", "CHINU"): 3,
+    ("CHINU", "CERETE"): 1,
+    ("CERETE", "CHINU"): 1,
+
+    # ========== CARMEN DE BOLÍVAR ==========
+    ("CARMEN DE BOLIVAR", "PLANETA RICA"): 3,
+
+    # ========== QUIBDÓ / PACÍFICO ==========
+    ("QUIBDO", "BOLOMBOLO"): 8,
+    ("BOLOMBOLO", "QUIBDO"): 8,
+    ("QUIBDO", "CIUDAD BOLIVAR"): 4,
+    ("CIUDAD BOLIVAR", "QUIBDO"): 4,
+    ("QUIBDO", "EL SIETE"): 2,
+    ("EL SIETE", "QUIBDO"): 2,
+    ("BOLOMBOLO", "CIUDAD BOLIVAR"): 3,
+    ("CIUDAD BOLIVAR", "BOLOMBOLO"): 3,
+    ("BOLOMBOLO", "ISTMINA"): 6,
+    ("ISTMINA", "BOLOMBOLO"): 6,
+    ("BOLOMBOLO", "JARDIN"): 2,
+    ("JARDIN", "BOLOMBOLO"): 2,
+    ("BOLOMBOLO", "URRAO"): 4,
+    ("URRAO", "BOLOMBOLO"): 4,
+    ("BOLOMBOLO", "BETULIA"): 2,
+    ("BETULIA", "BOLOMBOLO"): 2,
+    ("CIUDAD BOLIVAR", "ISTMINA"): 4,
+    ("ISTMINA", "CIUDAD BOLIVAR"): 4,
+    ("CAICEDO", "URRAO"): 2,
+    ("URRAO", "CAICEDO"): 2,
+    ("CONCORDIA", "URRAO"): 3,
+    ("URRAO", "CONCORDIA"): 3,
+    ("URRAO", "BETULIA"): 2,
+    ("BETULIA", "URRAO"): 2,
+
+    # ========== LA DORADA ==========
+    ("LA DORADA", "CAUCASIA"): 8,
+    ("CAUCASIA", "LA DORADA"): 8,
+    ("LA DORADA", "FACATATIVA"): 3,
+    ("FACATATIVA", "LA DORADA"): 3,
+    ("RIONEGRO", "LA DORADA"): 3,
+    ("LA DORADA", "RIONEGRO"): 3,
+
+    # ========== MAGANGUÉ ==========
+    ("MAGANGUE", "MEDELLIN"): 11,
+    ("MAGANGUE", "SINCELEJO"): 2,
+    ("SINCELEJO", "MAGANGUE"): 2,
+
+    # ========== MOMPOX ==========
+    ("MOMPOX", "MEDELLIN"): 12,
+    ("MEDELLIN", "MOMPOX"): 12,
+
+    # ========== SAN MARCOS / SAN ONOFRE ==========
+    ("SAN MARCOS", "MEDELLIN"): 11,
+    ("SAN MARCOS", "PLANETA RICA"): 2,
+    ("PLANETA RICA", "SAN MARCOS"): 2,
+    ("SAN ONOFRE", "MEDELLIN"): 12,
+    ("MEDELLIN", "SAN ONOFRE"): 12,
+
+    # ========== CIENAGA ==========
+    ("CIENAGA", "CAUCASIA"): 10,
+    ("CAUCASIA", "CIENAGA"): 10,
+    ("CIENAGA", "BARRANQUILLA"): 2,
+    ("BARRANQUILLA", "CIENAGA"): 2,
+    ("CIENAGA", "MEDELLIN"): 17,
+    ("MEDELLIN", "CIENAGA"): 17,
+    ("SINCELEJO", "CIENAGA"): 7,
+    ("CIENAGA", "SINCELEJO"): 7,
+
+    # ========== TUTUNENDO / CONDOTO ==========
+    ("TUTUNENDO", "MEDELLIN"): 10,
+    ("MEDELLIN", "TUTUNENDO"): 10,
+    ("CONDOTO", "MEDELLIN"): 10,
+    ("MEDELLIN", "CONDOTO"): 10,
+
+    # ========== LA APARTADA (adicionales) ==========
+    ("LA APARTADA", "CARMEN DE BOLIVAR"): 4,
+    ("CARMEN DE BOLIVAR", "LA APARTADA"): 4,
+    ("LA APARTADA", "PALOMINO"): 10,
+    ("PALOMINO", "LA APARTADA"): 10,
+
+    # ========== SINCELEJO (adicionales) ==========
+    ("SINCELEJO", "PALOMINO"): 7,
+    ("PALOMINO", "SINCELEJO"): 7,
+
+    # ========== PALOMINO ==========
+    ("PALOMINO", "BARRANQUILLA"): 3,
+    ("BARRANQUILLA", "PALOMINO"): 3,
+    ("PALOMINO", "MAICAO"): 3,
+    ("MAICAO", "PALOMINO"): 3,
+    ("PALOMINO", "SANTA MARTA"): 1,
+    ("SANTA MARTA", "PALOMINO"): 1,
+    ("PALOMINO", "MEDELLIN"): 19,
+    ("MEDELLIN", "PALOMINO"): 19,
+    ("PALOMINO", "CARTAGENA"): 5,
+    ("CARTAGENA", "PALOMINO"): 5,
+
+    # ========== BUENAVISTA CÓRDOBA ==========
+    ("BUENAVISTA", "MEDELLIN"): 5,
+    ("MEDELLIN", "BUENAVISTA"): 5,
+    ("BUENAVISTA", "BARRANQUILLA"): 7,
+    ("BARRANQUILLA", "BUENAVISTA"): 7,
+    ("BUENAVISTA", "MONTERIA"): 1,
+    ("MONTERIA", "BUENAVISTA"): 1,
+    ("BUENAVISTA", "PLANETA RICA"): 2,
+    ("PLANETA RICA", "BUENAVISTA"): 2,
+    ("BUENAVISTA", "CAUCASIA"): 3,
+    ("CAUCASIA", "BUENAVISTA"): 3,
+    ("BUENAVISTA", "SINCELEJO"): 4,
+    ("SINCELEJO", "BUENAVISTA"): 4,
+}
+
+# ===== NORMALIZACIÓN DE NOMBRES DE CIUDAD -> claves usadas en TIEMPOS_VIAJE =====
+CIUDADES_NORMALIZE = {
+    "medellin": "MEDELLIN", "medellín": "MEDELLIN",
+    "barranquilla": "BARRANQUILLA",
+    "bogota": "BOGOTA", "bogotá": "BOGOTA",
+    "cali": "CALI",
+    "sincelejo": "SINCELEJO",
+    "bucaramanga": "BUCARAMANGA",
+    "pereira": "PEREIRA",
+    "cartagena": "CARTAGENA",
+    "monteria": "MONTERIA", "montería": "MONTERIA",
+    "maicao": "MAICAO",
+    "caucasia": "CAUCASIA",
+    "planeta rica": "PLANETA RICA", "planetarica": "PLANETA RICA",
+    "la apartada": "LA APARTADA", "apartada": "LA APARTADA",
+    "santa marta": "SANTA MARTA", "santamarta": "SANTA MARTA",
+    "riohacha": "RIOHACHA",
+    "yarumal": "YARUMAL",
+    "sahagun": "SAHAGUN", "sahagún": "SAHAGUN",
+    "soledad": "SOLEDAD", "soledao": "SOLEDAD",
+    "puerto berrio": "PUERTO BERRIO", "puerto berrío": "PUERTO BERRIO", "puertoberrio": "PUERTO BERRIO",
+    "taraza": "TARAZA", "tarazá": "TARAZA",
+    "chinu": "CHINU", "chinú": "CHINU",
+    "tolu": "TOLU", "tolú": "TOLU",
+    "quibdo": "QUIBDO", "quibdó": "QUIBDO",
+    "arboletes": "ARBOLETES",
+    "betulia": "BETULIA",
+    "bolombolo": "BOLOMBOLO",
+    "caicedo": "CAICEDO",
+    "carmen de bolivar": "CARMEN DE BOLIVAR", "carmen de bolívar": "CARMEN DE BOLIVAR",
+    "cerete": "CERETE", "cereté": "CERETE",
+    "cienaga": "CIENAGA", "ciénaga": "CIENAGA",
+    "ciudad bolivar": "CIUDAD BOLIVAR", "ciudad bolívar": "CIUDAD BOLIVAR",
+    "concordia": "CONCORDIA",
+    "condoto": "CONDOTO",
+    "covenas": "COVENAS", "coveñas": "COVENAS",
+    "giraldo": "GIRALDO",
+    "istmina": "ISTMINA",
+    "jardin": "JARDIN", "jardín": "JARDIN",
+    "la dorada": "LA DORADA",
+    "lorica": "LORICA", "lórica": "LORICA",
+    "magangue": "MAGANGUE", "magangué": "MAGANGUE",
+    "mompox": "MOMPOX",
+    "rionegro": "RIONEGRO",
+    "san antero": "SAN ANTERO",
+    "san marcos": "SAN MARCOS",
+    "san onofre": "SAN ONOFRE",
+    "tutunendo": "TUTUNENDO",
+    "urrao": "URRAO",
+    "el siete": "EL SIETE",
+    "facatativa": "FACATATIVA", "facatativá": "FACATATIVA",
+    "andes": "ANDES",
+    "pueblo rico": "PUEBLO RICO",
+    "palomino": "PALOMINO",
+    "buenavista": "BUENAVISTA",
+    "medellin terminal norte": "MEDELLIN",
+    "medellin terminal sur": "MEDELLIN",
+}
+
 # Estado de trazabilidad que indica que la encomienda salió en bus hacia destino.
 # La fecha de ESTE evento es la hora de "inicio de viaje" desde la cual se
 # calcula la llegada estimada.
@@ -59,6 +692,13 @@ class Producto(BaseModel):
     unidades: str
     peso_cobrar: str
 
+class EstimacionLlegada(BaseModel):
+    salida_estimada: str
+    llegada_estimada: str
+    duracion_estimada_horas: float
+    sede_origen_despacho: str
+    nota: str
+
 class DatosEncomienda(BaseModel):
     numero_guia: str
     documento_anexo: Optional[str] = None
@@ -73,13 +713,6 @@ class DatosEncomienda(BaseModel):
     estado_actual: str
     estimacion_llegada: Optional[EstimacionLlegada] = None
     fecha_consulta: str
-
-class EstimacionLlegada(BaseModel):
-    salida_estimada: str
-    llegada_estimada: str
-    duracion_estimada_horas: float
-    sede_origen_despacho: str
-    nota: str
 
 class ConsultaRequest(BaseModel):
     numero_guia: str
@@ -146,21 +779,77 @@ def _parsear_fecha_evento(fecha_str: str) -> Optional[datetime]:
             continue
     return None
 
+def _clave_tiempos_viaje(nombre_normalizado: str) -> str:
+    """'medellin' -> 'MEDELLIN' usando CIUDADES_NORMALIZE; si la ciudad no está
+    mapeada explícitamente, usamos el propio nombre en mayúsculas como
+    fallback (cubre casos no listados sin reventar la búsqueda)."""
+    return CIUDADES_NORMALIZE.get(nombre_normalizado, nombre_normalizado.upper())
+
+def _duracion_horas_tabla(origen_slug: str, destino_slug: str) -> Optional[float]:
+    """Busca la duración (en horas) en la tabla estática TIEMPOS_VIAJE.
+
+    Es la fuente PRINCIPAL: instantánea y con más cobertura que la API de
+    horarios (incluye poblaciones pequeñas que esa API no indexa)."""
+    clave_o = _clave_tiempos_viaje(origen_slug)
+    clave_d = _clave_tiempos_viaje(destino_slug)
+    return TIEMPOS_VIAJE.get((clave_o, clave_d))
+
+def _duracion_horas_api_horarios(origen_slug: str, destino_slug: str, fecha_referencia) -> Optional[float]:
+    """Respaldo: si el par origen/destino no está en TIEMPOS_VIAJE, consulta
+    en vivo la API de horarios de Rápido Ochoa y promedia duracion_minutos.
+
+    OJO: esa API solo devuelve viajes futuros/disponibles (si se le pide una
+    fecha ya pasada, responde "0 buses" aunque la ruta exista). Como lo que
+    necesitamos es la DURACIÓN típica del trayecto —que no cambia día a día—,
+    si la fecha de referencia ya pasó usamos la fecha de HOY en su lugar."""
+    fecha_consulta = max(fecha_referencia, datetime.now().date())
+    try:
+        resp = requests.get(
+            f"{RUTAS_API_BASE}/buscar-rapido-ochoa",
+            params={
+                "origen": origen_slug,
+                "destino": destino_slug,
+                "fecha": fecha_consulta.strftime("%Y-%m-%d"),
+            },
+            timeout=20,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        duraciones = [
+            h["duracion_minutos"] for h in (data.get("horarios") or [])
+            if h.get("duracion_minutos")
+        ]
+    except Exception as e:
+        logger.warning(
+            f"No se pudo consultar duración de trayecto {origen_slug} -> {destino_slug}: {e}"
+        )
+        return None
+
+    if not duraciones:
+        return None
+    return (sum(duraciones) / len(duraciones)) / 60.0
+
 def estimar_llegada_encomienda(
     trazabilidad: List[EventoTrazabilidad], origen: str, destino: str
 ) -> Optional[EstimacionLlegada]:
     """Calcula una hora de llegada APROXIMADA para la encomienda.
 
-    Busca el evento '"DESPACHO NACIONAL BUSES"' (la fecha de ese evento marca
+    Busca el evento "DESPACHO NACIONAL BUSES" (la fecha de ese evento marca
     cuándo la encomienda salió hacia destino, y la 'sede' indica desde qué
-    oficina/terminal salió), y le suma la duración promedio del trayecto en
-    bus entre el origen y el destino — consultada en vivo a la API de horarios
-    de Rápido Ochoa (la misma que usan los pasajeros, ya que la encomienda
-    viaja físicamente en esos buses).
+    oficina/terminal salió), y le suma la duración típica del trayecto en bus
+    entre el origen y el destino. Esa duración se obtiene en dos pasos:
 
-    Devuelve None si no existe ese evento, si no se puede leer su fecha, o si
-    no hay datos de horarios disponibles para ese trayecto — en esos casos el
-    endpoint simplemente no incluye la estimación (no se inventa un valor)."""
+      1. PRIMERO se busca en TIEMPOS_VIAJE (tabla de referencia local —
+         instantánea y con cobertura de poblaciones pequeñas).
+      2. Si el par origen/destino no está ahí, se consulta como respaldo la
+         API de horarios reales de Rápido Ochoa (la encomienda viaja
+         físicamente en esos mismos buses, así que su duración es una buena
+         referencia).
+
+    Devuelve None si no existe el evento de despacho, si no se puede leer su
+    fecha, o si ninguna de las dos fuentes tiene una duración para esa ruta —
+    en esos casos el endpoint simplemente no incluye la estimación (nunca se
+    inventa un valor)."""
     if not trazabilidad:
         return None
 
@@ -184,40 +873,14 @@ def estimar_llegada_encomienda(
     if not origen_slug or not destino_slug or origen_slug == destino_slug:
         return None
 
-    # OJO: la API de horarios solo devuelve viajes futuros/disponibles (si se
-    # le pide una fecha ya pasada, responde "0 buses" aunque la ruta exista).
-    # Como lo que necesitamos es la DURACIÓN típica del trayecto —que no
-    # cambia día a día—, si el despacho ya ocurrió consultamos con la fecha
-    # de HOY (referencia válida para esa misma ruta) en vez de la fecha real
-    # del despacho, que normalmente ya está en el pasado.
-    fecha_consulta_horarios = max(fecha_salida.date(), datetime.now().date())
+    duracion_horas = _duracion_horas_tabla(origen_slug, destino_slug)
+    if duracion_horas is None:
+        duracion_horas = _duracion_horas_api_horarios(origen_slug, destino_slug, fecha_salida.date())
 
-    try:
-        resp = requests.get(
-            f"{RUTAS_API_BASE}/buscar-rapido-ochoa",
-            params={
-                "origen": origen_slug,
-                "destino": destino_slug,
-                "fecha": fecha_consulta_horarios.strftime("%Y-%m-%d"),
-            },
-            timeout=20,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        duraciones = [
-            h["duracion_minutos"] for h in (data.get("horarios") or [])
-            if h.get("duracion_minutos")
-        ]
-    except Exception as e:
-        logger.warning(
-            f"No se pudo consultar duración de trayecto {origen_slug} -> {destino_slug}: {e}"
-        )
+    if duracion_horas is None:
         return None
 
-    if not duraciones:
-        return None
-
-    duracion_prom_min = sum(duraciones) / len(duraciones)
+    duracion_prom_min = duracion_horas * 60.0
     llegada_estimada = fecha_salida + timedelta(minutes=duracion_prom_min)
 
     return EstimacionLlegada(
