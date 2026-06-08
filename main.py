@@ -671,6 +671,13 @@ CIUDADES_NORMALIZE = {
 # calcula la llegada estimada.
 ESTADO_DESPACHO = "DESPACHO NACIONAL BUSES"
 
+# Estados que indican que la encomienda YA llegó a su destino. Si cualquiera de
+# estos aparece en CUALQUIER punto de la trazabilidad (sin importar si es o no
+# el estado más reciente), ya no tiene sentido mostrar una "hora estimada de
+# llegada" — la encomienda ya está allá, mostrar una estimación sería confuso
+# o directamente incorrecto.
+ESTADOS_YA_LLEGADA = ("RECIBIDA EN BODEGA", "RECLAME EN OFICINA")
+
 # API externa (mismo proyecto/ecosistema) que tiene los horarios reales de buses
 # de Rápido Ochoa, incluida la duración del trayecto (duracion_minutos). La
 # usamos como referencia para estimar cuánto tiempo tarda la encomienda en
@@ -847,11 +854,21 @@ def estimar_llegada_encomienda(
          referencia).
 
     Devuelve None si no existe el evento de despacho, si no se puede leer su
-    fecha, o si ninguna de las dos fuentes tiene una duración para esa ruta —
-    en esos casos el endpoint simplemente no incluye la estimación (nunca se
-    inventa un valor)."""
+    fecha, si ninguna de las dos fuentes tiene una duración para esa ruta, o
+    si la encomienda YA llegó a destino — en esos casos el endpoint
+    simplemente no incluye la estimación (nunca se inventa un valor)."""
     if not trazabilidad:
         return None
+
+    # Si en CUALQUIER punto de la trazabilidad ya aparece un estado de "ya
+    # llegó" (RECIBIDA EN BODEGA / RECLAME EN OFICINA), no tiene sentido
+    # mostrar una hora estimada de llegada: la encomienda ya está en destino,
+    # así que se omite la estimación sin importar si ese es o no el estado
+    # más reciente.
+    for evento in trazabilidad:
+        texto_estado = f"{evento.detalle or ''} {evento.estado or ''}".upper()
+        if any(estado_llegada in texto_estado for estado_llegada in ESTADOS_YA_LLEGADA):
+            return None
 
     # Tomamos el evento de despacho más reciente (por si hay reintentos/escalas
     # con el mismo estado registrado más de una vez en la trazabilidad).
